@@ -19,5 +19,9 @@ for container in face_containers:
         face_datas.append(face_element_data.string)
 
 # デバッグ用、顔文字のリストを順番に出力
+
+
 for item in face_datas:
     print(item)
+
+print("ｺﾐｯﾄｫ")
