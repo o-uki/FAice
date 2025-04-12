@@ -25,3 +25,4 @@ for item in face_datas:
     print(item)
 
 print("ｺﾐｯﾄｫ")
+print("ｺﾐｯﾄｫｱﾝｻｰ!!!")
