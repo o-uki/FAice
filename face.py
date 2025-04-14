@@ -17,13 +17,14 @@ input_string = input("Enter here! > ")
 # 入力された文字列が顔文字かどうか判断する
 # レーベンシュタイン距離のデータ
 distances = pd.DataFrame(cdist(pd.Series(face_datas), pd.Series([input_string])))[0]
-distances_median = distances.quantile([0, 0.25, 0.5, 0.75, 1]).mean() - 20
+face_amount = distances.quantile([0, 0.25, 0.5, 0.75, 1]).mean() - 20
+is_face = face_amount >= 0
 
 print("====")
 
-if distances_median >= 0:
+if is_face:
     print("Is face: True")
 else:
     print("Is face: False")
 
-print(Template("Face amount: ${amount}\n====").substitute(amount=distances_median))
+print(Template("Face amount: ${amount}\n====").substitute(amount=face_amount))
