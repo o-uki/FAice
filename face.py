@@ -1,5 +1,4 @@
 import pandas as pd
-import re
 from rapidfuzz.process import cdist
 from string import Template
 
@@ -15,9 +14,17 @@ for face_item in face_data_file:
 input_string = input("Enter here! > ")
 
 # 入力された文字列が顔文字かどうか判断する
+# 長さの平均をとる
+lengthDatas = []
+for face in face_datas:
+    lengthDatas.append(len(face))
+
+lengthMean = pd.Series(lengthDatas).mean() / 1.55
+
 # レーベンシュタイン距離のデータ
 distances = pd.DataFrame(cdist(pd.Series(face_datas), pd.Series([input_string])))[0]
-face_amount = distances.quantile([0, 0.25, 0.5, 0.75, 1]).mean() - 20
+face_amount = distances.quantile([0, 0.25, 0.5, 0.75, 1]).mean() - (lengthMean - len(input_string)) - 20
+
 is_face = face_amount >= 0
 
 print("====")
