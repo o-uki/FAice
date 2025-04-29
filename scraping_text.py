@@ -5,25 +5,29 @@ import MeCab
 import pandas as pd
 from rapidfuzz.process import cdist
 
-# # スクレイピング
-# # 顔文字と文章のデータのリスト
-# face_texts = []
+# スクレイピング
+# 顔文字と文章のデータのリスト
+face_texts = []
 
-# browser = webdriver.Chrome()
-# for i in range(406):
-#     browser.implicitly_wait(1)
-#     browser.get('https://www.kaomoji-ichiran.com/')
-#     try:
-#         browser.execute_script("arguments[0].click();", browser.find_element(by=By.XPATH, value="//*[@id='post-439']/div/table/tbody/tr[" + str(i + 2) + "]/td[1]/a"))
-#         face_texts += browser.find_element(by=By.XPATH, value="//*[@id='post-" + str(i + 32) + "']/div/p[2]").text.split("\n■ ")
-#     except:
-#         continue
+face_data_range = 406
+
+browser = webdriver.Chrome()
+for i in range(face_data_range):
+    browser.implicitly_wait(1)
+    browser.get('https://www.kaomoji-ichiran.com/')
+    print("Scraping...", str(round((i + 1) / face_data_range * 100, 2)) + "%", "/", "100%")
+    try:
+        browser.execute_script("arguments[0].click();", browser.find_element(by=By.XPATH, value="//*[@id='post-439']/div/table/tbody/tr[" + str(i + 2) + "]/td[1]/a"))
+        face_text = browser.find_element(by=By.XPATH, value="//*[@id='post-" + str(i + 32) + "']/div/p[2]").text.removeprefix("■ ").split("\n■ ")
+        face_texts += face_text
+    except:
+        continue
 
 # MeCabの準備
 mecab = MeCab.Tagger()
 
 # 文字列が顔文字か判断する関数
-def isStringFace(string):
+def is_string_face(string):
     # 顔文字のデータファイル
     face_data_file = pd.read_csv("./face_data.csv")
 
@@ -47,59 +51,50 @@ def isStringFace(string):
         return False
 
 # 単語のリストに顔文字が含まれるか判断する関数
-def isInFace(checkWords):
-    words = checkWords.copy()
-    wordsLength = len(words)
+def is_in_face(check_words):
+    words = check_words[:]
+    words_length = len(words)
 
     faces = []
-    inFaceFlag = False
+    in_face_flag = False
 
-    for i in range(wordsLength):
-        for j in range(wordsLength - i):
-            detectRangeList = words[i : j + 1 + i].copy()
-            detectString = "".join(detectRangeList)
+    for i in range(words_length):
+        for j in range(words_length - i):
+            detect_range_list = words[i : j + 1 + i][:]
+            detect_string = "".join(detect_range_list)
 
-            if isStringFace(detectString):
+            if is_string_face(detect_string):
                 del words[i : j + 1 + i]
-                faces.append("".join(detectRangeList))
-                inFaceFlag = True
+                faces.append("".join(detect_range_list))
+                in_face_flag = True
     
-    return {"words": words, "faces": faces, "inFace": inFaceFlag}
-
-print(isInFace(["どうも", "みなさん", "こんにちは"]))
+    return {"words": words, "faces": faces, "in_face": in_face_flag}
 
 # トークナイズする関数
 def tokenize(string):
-    nodes = mecab.parseToNode(string)
+    nodes = mecab.parseToNode(string).next
     tokens = []
+
     while nodes:
         tokens.append(nodes.surface)
         nodes = nodes.next
 
+    tokens.pop()
     return tokens
 
-# # 顔文字を一つずつチェック
-# for i, post in enumerate(japanese_bluesky_data.posts):
-#     print("Index:", i, "Text:", post.record.text, "\n")
-#     tokenFace = isInFace(tokenize(post.record.text))
+# 顔文字を一つずつチェック
+with open("./text_data.csv", "w", encoding="UTF-8") as text_data_file:
+    # ファイルに出力する文字列のリスト
+    file_output_list = ["Texts", "Faces"]
     
-#     if tokenFace["inFace"]:
-#         # ファイルに書き込み
-#         with open("./bluesky_data.csv", "a", encoding="UTF-8") as post_text_data_file:
-#             print(print("," + " ".join(tokenFace["words"]) + "," + tokenFace["face"], file=post_text_data_file), file=post_text_data_file)
+    # 顔文字データの量
+    face_texts_length = len(face_texts)
 
-#         print("Face Printed!!")
-    
-#     print("======")
+    for i, face_text in enumerate(face_texts):
+        print("Printing...", str(round((i + 1) / face_texts_length * 100, 2)) + "%", "/", "100%", ">", face_text)
 
-# with open("./text_data.csv", "w", encoding="UTF-8") as text_data_file:
-#     # ファイルに出力する文字列
-#     file_output = ""
-    
-#     # 顔文字データの量
-#     face_texts_length = len(face_texts)
+        face_data = is_in_face(tokenize(face_text))
+        if face_data["in_face"] and face_data["words"]:
+            file_output_list += ["¥¥¥".join(face_data["words"]), "¥¥¥".join(face_data["faces"])]
 
-#     for face_text, i in enumerate(face_texts):
-#         print("Printing...", i, "/", face_texts_length)
-
-#         face_data = isInFace(tokenize(face_text))
+    print(*file_output_list, sep=",", file=text_data_file)
